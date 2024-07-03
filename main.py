@@ -9,10 +9,9 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 import sqlalchemy.exc
-
 from sqlalchemy import create_engine
 
-# Fonction pour initialiser la base de données en fonction du type
+# Function to initialize the database based on type
 def init_database(db_type: str, user: str, password: str, host: str, port: str, database: str) -> SQLDatabase:
     try:
         if db_type == "MySQL":
@@ -138,118 +137,77 @@ if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
 def login(username, password):
-    # Remplacez ceci par la vérification réelle des identifiants
+    # Replace this with the actual credentials check
     if username == "admin" and password == "aze123":
         return True
     return False
 
 def show_login_page():
+    st.title("Page de Connexion")
     st.markdown("""
         <style>
         .login-container {
-            max-width: 400px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            margin: 0 auto;
-            margin-top: 100px;
-            background-color: #f9f9f9;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
         }
-        .login-title {
-            text-align: center;
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 20px;
+        .login-input {
+            margin: 10px 0;
+            width: 300px;
         }
-        .login-form {
-            margin-bottom: 20px;
+        .login-button {
+            width: 300px;
         }
-        .login-form input[type="password"],
-        .login-form input[type="text"] {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .login-form button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 14px 20px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-        }
-        .login-form button:hover {
-            background-color: #45a049;
+        .login-footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: gray;
         }
         </style>
+        <div class="login-container">
     """, unsafe_allow_html=True)
+    
+    username = st.text_input("Username", placeholder="Enter your username", key="login_username", class_="login-input")
+    password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password", class_="login-input")
 
-    st.markdown('<h1 class="login-title">Page de Login</h1>', unsafe_allow_html=True)
-    with st.markdown('<div class="login-container">', unsafe_allow_html=True):
-        username = st.text_input("Username", placeholder="Enter your username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password")
-        if st.button("Login"):
-            if login(username, password):
-                st.session_state.logged_in = True
-                st.experimental_rerun()
-            else:
-                st.error("Identifiants incorrects. Veuillez réessayer.")
-    st.markdown("</div>", unsafe_allow_html=True)
+    if st.button("Log In", key="login_button", class_="login-button"):
+        if login(username, password):
+            st.session_state.logged_in = True
+            st.experimental_rerun()
+        else:
+            st.error("Invalid username or password")
+    
+    st.markdown("""
+        <div class="login-footer">
+            Application développée par DIGITAR.
+        </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 def show_main_page():
     load_dotenv()
 
-    st.set_page_config(page_title="Chat with Database", page_icon=":speech_balloon:", layout="wide")
+    st.set_page_config(page_title="Chat with Database", page_icon=":speech_balloon:", layout="centered")
 
     st.markdown("""
         <style>
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-        }
-        .header-title {
-            font-size: 24px;
-        }
-        .logout-icon {
-            cursor: pointer;
-            font-size: 24px;
-        }
         .main {
-            padding: 20px;
+            color: #ffffff;
         }
         .stButton button {
             background-color: #4CAF50;
             color: white;
         }
+        
         </style>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    st.markdown("""
-        <div class="header">
-            <div class="header-title">Chat with Your Database</div>
-            <div class="logout-icon" onclick="logout()">&#x1F511;</div>
-        </div>
-        <script>
-        function logout() {
-            fetch('/logout').then(() => location.reload());
-        }
-        </script>
-    """, unsafe_allow_html=True)
+    st.title("Chat with Your Database")
 
     with st.sidebar:
-        st.subheader(" Settings", divider=True)
+        st.subheader("Settings", divider=True)
         st.write("Connect to the database and start chatting.")
         
         db_type = st.selectbox("Database Type", ["MySQL", "PostgreSQL", "SQL Server"], key="db_type")
@@ -284,7 +242,7 @@ def show_main_page():
     st.write("Ask your database anything and get the response in natural language.")
 
     for message in st.session_state.chat_history:
-        if isinstance(message, AIMessage):
+                if isinstance(message, AIMessage):
             with st.chat_message("AI"):
                 st.markdown(message.content)
         elif isinstance(message, HumanMessage):
