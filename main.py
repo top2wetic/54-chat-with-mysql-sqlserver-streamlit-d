@@ -9,9 +9,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 import sqlalchemy.exc
+
 from sqlalchemy import create_engine
 
-# Function to initialize the database based on type
+# Fonction pour initialiser la base de données en fonction du type
 def init_database(db_type: str, user: str, password: str, host: str, port: str, database: str) -> SQLDatabase:
     try:
         if db_type == "MySQL":
@@ -128,68 +129,93 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list, llm_type:
     except Exception as e:
         return f"An unexpected error occurred: {str(e)}"
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        AIMessage(content="Hello! I'm a SQL assistant. Ask me anything about your database."),
-    ]
-
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-
-def login(username, password):
-    # Replace this with the actual credentials check
-    if username == "admin" and password == "aze123":
-        return True
-    return False
-
 def show_login_page():
-    st.title("Page de Connexion")
+    st.set_page_config(page_title="Login | DIGITAR", page_icon=":lock:", layout="centered")
     st.markdown("""
         <style>
         .login-container {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f2f6;
+        }
+        .login-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .login-header {
+            margin-bottom: 20px;
+        }
+        .login-header h2 {
+            color: #333;
+        }
+        .login-header p {
+            color: #777;
+            font-size: 14px;
         }
         .login-input {
-            margin: 10px 0;
-            width: 300px;
+            margin-bottom: 15px;
         }
         .login-button {
-            width: 300px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        .login-footer {
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+        .footer {
             margin-top: 20px;
             font-size: 12px;
-            color: gray;
+            color: #999;
         }
         </style>
         <div class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <h2>Login</h2>
+                    <p>Welcome to Chat with Your Database<br>Developed by DIGITAR</p>
+                </div>
+                <div class="login-input">
+                    <input type="text" placeholder="Enter your username" id="username" class="stTextInput">
+                </div>
+                <div class="login-input">
+                    <input type="password" placeholder="Enter your password" id="password" class="stTextInput">
+                </div>
+                <button class="login-button" id="login-button">Log In</button>
+                <div class="footer">
+                    <p>Powered by <b>DIGITAR</b></p>
+                </div>
+            </div>
+        </div>
     """, unsafe_allow_html=True)
-    
-    username = st.text_input("Username", placeholder="Enter your username", key="login_username", class_="login-input")
-    password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password", class_="login-input")
 
-    if st.button("Log In", key="login_button", class_="login-button"):
-        if login(username, password):
-            st.session_state.logged_in = True
+    # Collect the inputs from the login form
+    username = st.text_input("User", placeholder="Enter your username")
+    password = st.text_input("Password", type="password", placeholder="Enter your password")
+
+    if st.button("Log In"):
+        # Simple credential check (for demonstration purposes only)
+        if username == "admin" and password == "aze123":
+            st.session_state["logged_in"] = True
             st.experimental_rerun()
         else:
             st.error("Invalid username or password")
-    
-    st.markdown("""
-        <div class="login-footer">
-            Application développée par DIGITAR.
-        </div>
-        </div>
-    """, unsafe_allow_html=True)
 
 def show_main_page():
     load_dotenv()
 
-    st.set_page_config(page_title="Chat with Database", page_icon=":speech_balloon:", layout="centered")
+    st.set_page_config(page_title="Chat with Your Database", page_icon=":speech_balloon:", layout="centered")
 
     st.markdown("""
         <style>
@@ -200,49 +226,39 @@ def show_main_page():
             background-color: #4CAF50;
             color: white;
         }
-        
+        .stButton button:hover {
+            background-color: #45a049;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+        }
+        .header .logout-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header .logout-button:hover {
+            color: #0056b3;
+        }
         </style>
-        """, unsafe_allow_html=True)
-
-    st.title("Chat with Your Database")
-
-    with st.sidebar:
-        st.subheader("Settings", divider=True)
-        st.write("Connect to the database and start chatting.")
-        
-        db_type = st.selectbox("Database Type", ["MySQL", "PostgreSQL", "SQL Server"], key="db_type")
-        st.text_input("Host", value="localhost", key="Host")
-        st.text_input("Port", value="3306", key="Port")
-        st.text_input("UserName", value="root", key="User")
-        st.text_input("Password", type="password", value="admin", key="Password")
-        st.text_input("Database", value="artist", key="Database")
-        
-        st.subheader("LLM Configuration")
-        llm_type = st.selectbox("LLM Type", ["OpenAI", "Groq"], key="llm_type")
-        model = st.text_input("Model (optional)", value="", key="model", help="Leave empty to use the default model")
-        api_key = st.text_input("API Key", type="password", key="api_key")
-
-        if st.button("Connect"):
-            with st.spinner("Connecting to database..."):
-                try:
-                    db = init_database(
-                        st.session_state["db_type"],
-                        st.session_state["User"],
-                        st.session_state["Password"],
-                        st.session_state["Host"],
-                        st.session_state["Port"],
-                        st.session_state["Database"]
-                    )
-                    st.session_state.db = db
-                    st.success("Connected to database!")
-                except Exception as e:
-                    st.error(f"Failed to connect to database: {str(e)}")
+        <div class="header">
+            <h1>Chat with Your Database</h1>
+            <button class="logout-button" title="Logout" onclick="window.location.href='/logout'">&#x1F512;</button>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.subheader("Chat with the Database")
     st.write("Ask your database anything and get the response in natural language.")
 
     for message in st.session_state.chat_history:
-                if isinstance(message, AIMessage):
+        if isinstance(message, AIMessage):
             with st.chat_message("AI"):
                 st.markdown(message.content)
         elif isinstance(message, HumanMessage):
@@ -274,6 +290,19 @@ def show_main_page():
             st.markdown(response)
             
         st.session_state.chat_history.append(AIMessage(content=response))
+
+    # Logout action for the button
+    if st.experimental_get_query_params().get("logout", [None])[0]:
+        st.session_state.logged_in = False
+        st.experimental_rerun()
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [
+        AIMessage(content="Hello! I'm a SQL assistant. Ask me anything about your database."),
+    ]
+
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 
 if st.session_state.logged_in:
     show_main_page()
