@@ -139,7 +139,7 @@ if 'logged_in' not in st.session_state:
 
 def login(email, password):
     # Remplacez ceci par la vérification réelle des identifiants
-    if email == "admin@example.com" and password == "password":
+    if email == "top2.wetic@gmail.com" and password == "dap.gmd8cnp_RXE@yvh":
         return True
     return False
 
