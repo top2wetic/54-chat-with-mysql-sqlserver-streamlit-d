@@ -148,7 +148,7 @@ def show_login_page():
     st.markdown("""
         <style>
         .login-container {
-            background-color: #f4f4f9;
+            # background-color: #f4f4f9;
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
