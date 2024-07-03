@@ -1,4 +1,4 @@
-
+import streamlit as st
 import urllib.parse
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
@@ -8,13 +8,10 @@ from langchain_community.utilities import SQLDatabase
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
-import streamlit as st
 import sqlalchemy.exc
 
 from sqlalchemy import create_engine
-import urllib.parse
 
-from sqlalchemy import create_engine
 # Fonction pour initialiser la base de données en fonction du type
 def init_database(db_type: str, user: str, password: str, host: str, port: str, database: str) -> SQLDatabase:
     try:
@@ -23,7 +20,7 @@ def init_database(db_type: str, user: str, password: str, host: str, port: str, 
         elif db_type == "PostgreSQL":
             db_uri = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
         elif db_type == "SQL Server":
-            driver =  'ODBC Driver 17 for SQL Server'
+            driver = 'ODBC Driver 17 for SQL Server'
             if user and password:
                 driver = '{ODBC Driver 17 for SQL Server}'
                 params = urllib.parse.quote_plus(f"DRIVER={driver};SERVER={host};DATABASE={database};UID={user};PWD={password}")
@@ -137,114 +134,190 @@ if "chat_history" not in st.session_state:
         AIMessage(content="Hello! I'm a SQL assistant. Ask me anything about your database."),
     ]
 
-load_dotenv()
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 
-st.set_page_config(page_title="Chat with Database", page_icon=":speech_balloon:", layout="centered")
+def login(username, password):
+    # Remplacez ceci par la vérification réelle des identifiants
+    if username == "admin" and password == "aze123":
+        return True
+    return False
 
-st.markdown("""
-    <style>
-    .main {
-        color: #ffffff;
-    }
-    .stButton button {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .stTextInput input {
-        background-color: #1A2130;
-        color: #ffffff;
-    }
-    .stSelectbox select {
-        background-color: #1c1e22;
-        color: #ffffff;
-    }
-    .stTextArea textarea {
-        background-color: #1c1e22;
-        color: #ffffff;
-    }
-    .stMarkdown div {
-        color: #ffffff;
-    }
-    .sidebar .sidebar-content {
-        background-color:#686D76;
-    }
-    </style>
+def show_login_page():
+    st.markdown("""
+        <style>
+        .login-container {
+            max-width: 400px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin: 0 auto;
+            margin-top: 100px;
+            background-color: #f9f9f9;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .login-title {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .login-form {
+            margin-bottom: 20px;
+        }
+        .login-form input[type="password"],
+        .login-form input[type="text"] {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .login-form button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        .login-form button:hover {
+            background-color: #45a049;
+        }
+        </style>
     """, unsafe_allow_html=True)
 
-st.title("Chat with Your Database")
-
-with st.sidebar:
-    st.subheader("Settings")
-    st.write("Connect to the database and start chatting.")
-    
-    db_type = st.selectbox("Database Type", ["MySQL", "PostgreSQL", "SQL Server"], key="db_type")
-    st.text_input("Host", value="localhost", key="Host")
-    st.text_input("Port", value="3306", key="Port")
-    st.text_input("UserName", value="root", key="User")
-    st.text_input("Password", type="password", value="admin", key="Password")
-    st.text_input("Database", value="artist", key="Database")
-    
-    st.subheader("LLM Configuration")
-    llm_type = st.selectbox("LLM Type", ["OpenAI", "Groq"], key="llm_type")
-    model = st.text_input("Model (optional)", value="", key="model", help="Leave empty to use the default model")
-    api_key = st.text_input("API Key", type="password", key="api_key")
-
-    if st.button("Connect"):
-        with st.spinner("Connecting to database..."):
-            try:
-                db = init_database(
-                    st.session_state["db_type"],
-                    st.session_state["User"],
-                    st.session_state["Password"],
-                    st.session_state["Host"],
-                    st.session_state["Port"],
-                    st.session_state["Database"]
-                )
-                st.session_state.db = db
-                st.success("Connected to database!")
-            except Exception as e:
-                st.error(f"Failed to connect to database: {str(e)}")
-
-st.subheader("Chat with the Database")
-st.write("Ask your database anything and get the response in natural language.")
-
-for message in st.session_state.chat_history:
-    if isinstance(message, AIMessage):
-        with st.chat_message("AI"):
-            st.markdown(message.content)
-    elif isinstance(message, HumanMessage):
-        with st.chat_message("Human"):
-            st.markdown(message.content)
-
-user_query = st.chat_input("Type a message...")
-if user_query is not None and user_query.strip() != "":
-    st.session_state.chat_history.append(HumanMessage(content=user_query))
-    
-    with st.chat_message("Human"):
-        st.markdown(user_query)
-        
-    with st.chat_message("AI"):
-        if "db" in st.session_state:
-            if "api_key" in st.session_state and "llm_type" in st.session_state:
-                response = get_response(
-                    user_query, 
-                    st.session_state.db, 
-                    st.session_state.chat_history, 
-                    st.session_state.llm_type, 
-                    st.session_state.api_key, 
-                    st.session_state.model if st.session_state.model.strip() != "" else None
-                )
+    st.markdown('<h1 class="login-title">Page de Login</h1>', unsafe_allow_html=True)
+    with st.markdown('<div class="login-container">', unsafe_allow_html=True):
+        username = st.text_input("Username", placeholder="Enter your username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
+        if st.button("Login"):
+            if login(username, password):
+                st.session_state.logged_in = True
+                st.experimental_rerun()
             else:
-                response = "Please configure the LLM settings first."
-        else:
-            response = "Please connect to a database first."
-        st.markdown(response)
+                st.error("Identifiants incorrects. Veuillez réessayer.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+def show_main_page():
+    load_dotenv()
+
+    st.set_page_config(page_title="Chat with Database", page_icon=":speech_balloon:", layout="wide")
+
+    st.markdown("""
+        <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .logout-icon {
+            cursor: pointer;
+            font-size: 24px;
+        }
+        .main {
+            padding: 20px;
+        }
+        .stButton button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+        <div class="header">
+            <div class="header-title">Chat with Your Database</div>
+            <div class="logout-icon" onclick="logout()">&#x1F511;</div>
+        </div>
+        <script>
+        function logout() {
+            fetch('/logout').then(() => location.reload());
+        }
+        </script>
+    """, unsafe_allow_html=True)
+
+    with st.sidebar:
+        st.subheader(" Settings", divider=True)
+        st.write("Connect to the database and start chatting.")
         
-    st.session_state.chat_history.append(AIMessage(content=response))
+        db_type = st.selectbox("Database Type", ["MySQL", "PostgreSQL", "SQL Server"], key="db_type")
+        st.text_input("Host", value="localhost", key="Host")
+        st.text_input("Port", value="3306", key="Port")
+        st.text_input("UserName", value="root", key="User")
+        st.text_input("Password", type="password", value="admin", key="Password")
+        st.text_input("Database", value="artist", key="Database")
+        
+        st.subheader("LLM Configuration")
+        llm_type = st.selectbox("LLM Type", ["OpenAI", "Groq"], key="llm_type")
+        model = st.text_input("Model (optional)", value="", key="model", help="Leave empty to use the default model")
+        api_key = st.text_input("API Key", type="password", key="api_key")
 
+        if st.button("Connect"):
+            with st.spinner("Connecting to database..."):
+                try:
+                    db = init_database(
+                        st.session_state["db_type"],
+                        st.session_state["User"],
+                        st.session_state["Password"],
+                        st.session_state["Host"],
+                        st.session_state["Port"],
+                        st.session_state["Database"]
+                    )
+                    st.session_state.db = db
+                    st.success("Connected to database!")
+                except Exception as e:
+                    st.error(f"Failed to connect to database: {str(e)}")
 
+    st.subheader("Chat with the Database")
+    st.write("Ask your database anything and get the response in natural language.")
 
+    for message in st.session_state.chat_history:
+        if isinstance(message, AIMessage):
+            with st.chat_message("AI"):
+                st.markdown(message.content)
+        elif isinstance(message, HumanMessage):
+            with st.chat_message("Human"):
+                st.markdown(message.content)
 
+    user_query = st.chat_input("Type a message...")
+    if user_query is not None and user_query.strip() != "":
+        st.session_state.chat_history.append(HumanMessage(content=user_query))
+        
+        with st.chat_message("Human"):
+            st.markdown(user_query)
+            
+        with st.chat_message("AI"):
+            if "db" in st.session_state:
+                if "api_key" in st.session_state and "llm_type" in st.session_state:
+                    response = get_response(
+                        user_query, 
+                        st.session_state.db, 
+                        st.session_state.chat_history, 
+                        st.session_state.llm_type, 
+                        st.session_state.api_key, 
+                        st.session_state.model if st.session_state.model.strip() != "" else None
+                    )
+                else:
+                    response = "Please configure the LLM settings first."
+            else:
+                response = "Please connect to a database first."
+            st.markdown(response)
+            
+        st.session_state.chat_history.append(AIMessage(content=response))
 
-
-
+if st.session_state.logged_in:
+    show_main_page()
+else:
+    show_login_page()
