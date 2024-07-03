@@ -10,8 +10,6 @@ from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 import sqlalchemy.exc
 
-from sqlalchemy import create_engine
-
 # Fonction pour initialiser la base de données en fonction du type
 def init_database(db_type: str, user: str, password: str, host: str, port: str, database: str) -> SQLDatabase:
     try:
@@ -27,7 +25,6 @@ def init_database(db_type: str, user: str, password: str, host: str, port: str, 
                 db_uri = f"mssql+pyodbc:///?odbc_connect={params}"
             else:
                 db_uri = f"mssql+pyodbc://{host}/{database}?trusted_connection=yes&driver={driver}"
-            return SQLDatabase.from_uri(db_uri)
         else:
             raise ValueError("Unsupported database type")
         
@@ -129,6 +126,7 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list, llm_type:
     except Exception as e:
         return f"An unexpected error occurred: {str(e)}"
 
+# Initialisation des variables de session
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         AIMessage(content="Hello! I'm a SQL assistant. Ask me anything about your database."),
@@ -149,10 +147,6 @@ def show_login_page():
 
     st.markdown("""
         <style>
-        .login-title {
-            color: #4CAF50;
-            text-align: center;
-        }
         .login-container {
             background-color: #f4f4f9;
             padding: 2rem;
@@ -179,7 +173,7 @@ def show_login_page():
 
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    login_button = st.button("Login", key="login_button", help="Click to log in")
+    login_button = st.button("Login", key="login_button", help="Click to log in", use_container_width=True)
 
     if login_button:
         if login(username, password):
@@ -215,11 +209,11 @@ def show_main_page():
         st.write("Connect to the database and start chatting.")
         
         db_type = st.selectbox("Database Type", ["MySQL", "PostgreSQL", "SQL Server"], key="db_type")
-        st.text_input("Host", value="localhost", key="Host")
-        st.text_input("Port", value="3306", key="Port")
-        st.text_input("UserName", value="root", key="User")
-        st.text_input("Password", type="password", value="admin", key="Password")
-        st.text_input("Database", value="artist", key="Database")
+        host = st.text_input("Host", value="localhost", key="Host")
+        port = st.text_input("Port", value="3306", key="Port")
+        user = st.text_input("UserName", value="root", key="User")
+        password = st.text_input("Password", type="password", value="admin", key="Password")
+        database = st.text_input("Database", value="artist", key="Database")
         
         st.subheader("LLM Configuration")
         llm_type = st.selectbox("LLM Type", ["OpenAI", "Groq"], key="llm_type")
@@ -230,15 +224,18 @@ def show_main_page():
             with st.spinner("Connecting to database..."):
                 try:
                     db = init_database(
-                        st.session_state["db_type"],
-                        st.session_state["User"],
-                        st.session_state["Password"],
-                        st.session_state["Host"],
-                        st.session_state["Port"],
-                        st.session_state["Database"]
+                        db_type,
+                        user,
+                        password,
+                        host,
+                        port,
+                        database
                     )
-                    st.session_state.db = db
-                    st.success("Connected to database!")
+                    if db is not None:
+                        st.session_state.db = db
+                        st.success("Connected to database!")
+                    else:
+                        st.error("Failed to connect to the database.")
                 except Exception as e:
                     st.error(f"Failed to connect to database: {str(e)}")
 
