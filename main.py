@@ -212,8 +212,8 @@ def show_main_page():
         host = st.text_input("Host", value="sql10.freesqldatabase.com", key="Host")
         port = st.text_input("Port", value="3306", key="Port")
         user = st.text_input("UserName", value="sql10717334", key="User")
-        password = st.text_input("Password", type="password", value="admin", key="RGRdeADQwQ")
-        database = st.text_input("Database", value="sql10717334", key="Database")
+        password = st.text_input("Password", type="password", value="RGRdeADQwQ", key="Password")
+        database = st.text_input("Database", value="artist", key="Database")
         
         st.subheader("LLM Configuration")
         llm_type = st.selectbox("LLM Type", ["OpenAI", "Groq"], key="llm_type")
