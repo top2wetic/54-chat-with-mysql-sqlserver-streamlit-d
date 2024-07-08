@@ -209,11 +209,11 @@ def show_main_page():
         st.write("Connect to the database and start chatting.")
         
         db_type = st.selectbox("Database Type", ["MySQL", "PostgreSQL", "SQL Server"], key="db_type")
-        host = st.text_input("Host", value="localhost", key="Host")
+        host = st.text_input("Host", value="sql10.freesqldatabase.com", key="Host")
         port = st.text_input("Port", value="3306", key="Port")
-        user = st.text_input("UserName", value="root", key="User")
-        password = st.text_input("Password", type="password", value="admin", key="Password")
-        database = st.text_input("Database", value="artist", key="Database")
+        user = st.text_input("UserName", value="sql10717334", key="User")
+        password = st.text_input("Password", type="password", value="admin", key="RGRdeADQwQ")
+        database = st.text_input("Database", value="sql10717334", key="Database")
         
         st.subheader("LLM Configuration")
         llm_type = st.selectbox("LLM Type", ["OpenAI", "Groq"], key="llm_type")
